@@ -28,6 +28,10 @@ int stopdistance = 90; // parking position from sensor (CENTIMETERS)
 int startdistance = 400; // distance from sensor to begin scan as car pulls in(CENTIMETERS)
 int increment = ((startdistance - stopdistance) / NUM_LEDS);
 
+int lastDistanceChange = 0;
+int lastDistance = 0;
+int motionDelta = 5;
+
 QuickStats stats;
 
 void setup() {
@@ -35,7 +39,6 @@ void setup() {
     pinMode(echoPin, INPUT); // Sets the echoPin as an Input
     FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
     Serial.begin(9600); // Starts the serial communication
-    lastDistanceChange = 0; // make sure it's zero
 }
 
 void loop() {
@@ -59,6 +62,21 @@ void loop() {
     Serial.print("Distance: ");
     Serial.println(distance);
 
+    if (abs(lastDistance - distance) > motionDelta) {
+      lastDistanceChange = 0; // there's motion, reset the loop counter
+    }
+    else
+    {
+      lastDistanceChange += 1; // increment number of loops
+      if (lastDistanceChange > 600) { // 600 loops should be around 30 seconds. 
+        for (int i = 0; i <= NUM_LEDS-1; i++) {
+          leds[i] = CRGB(0, 0, 0); // set them all off
+        }
+        FastLED.show();
+        return;
+      }
+    }
+    
     if (distance < stopdistance) {
         for (int i = 0; i <= 21; i ++) {
             leds[i] = CRGB(255, 0, 0);
